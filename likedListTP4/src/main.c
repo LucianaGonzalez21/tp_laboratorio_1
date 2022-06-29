@@ -20,68 +20,241 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../testing/inc/main_test.h"
-#include "../inc/LinkedList.h"
+//#include "../testing/inc/main_test.h"
+#include "LinkedList.h"
 
 
 int main(void)
 {
-	setbuf(stdout,  NULL);
+	setbuf(stdout, NULL);
+		char salir='n';
+		int flagLoad=0;
+		int dioAlMenosUnAlta=0;
+		int altasNoGuardadas=0;
+		char confirmaGuardarTxt;
+		char confirmaReiniciarLista;
+		int guardoLista=0;
 
-//	LinkedList* lista = ll_newLinkedList();
+		LinkedList* listaEmpleados = ll_newLinkedList();
+		do{
+			switch(menu())
+			{
+				case 1:
+					if(flagLoad)
+					{
+						printf("Ya cargo la lista, no se puede cargarla 2 veces la lista\n");
+					}
+					else
+					{
 
-	startTesting(1);  // ll_newLinkedList
-	startTesting(2);  // ll_len
-	startTesting(3);  // getNode - test_getNode
-	startTesting(4);  // addNode - test_addNode
-	startTesting(5);  // ll_add
-	startTesting(6);  // ll_get
-	startTesting(7);  // ll_set
-	startTesting(8);  // ll_remove
-	startTesting(9);  // ll_clear
-	startTesting(10); // ll_deleteLinkedList
-	startTesting(11); // ll_indexOf
-	startTesting(12); // ll_isEmpty
-	startTesting(13); // ll_push
-	startTesting(14); // ll_pop
-	startTesting(15); // ll_contains
-	startTesting(16); // ll_containsAll
-	startTesting(17); // ll_subList
-	startTesting(18); // ll_clone
-	startTesting(19); // ll_sort */
+						if(controller_loadFromText("data.csv",listaEmpleados))
+						{
+							printf("se cargo la lista con exito\n");
+							flagLoad=1;
+						}
+					}
+					break;
 
-    return 0;
+				case 2:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_EliminarEmpleadoConMayorSueldo(listaEmpleados);
+					}
+					else
+					{
+						printf("Primero debe dar de alta al menos un empleado o cargar la lista\n");
+					}
+					break;
+
+				case 3:
+					if(flagLoad)
+					{
+						utn_getCaracter(&confirmaReiniciarLista, "Esta seguro que desea reiniciar la lista (se le eliminaran todos los elementos)?  (s/n): ", "Error\n", 'a', 'z', 2);
+						if(confirmaReiniciarLista=='s')
+						{
+							if(!ll_clear(listaEmpleados))
+							{
+								printf("Se reinicio la lista correctamente\n");
+
+							}
+							else
+							{
+								printf("No se pudo reiniciar la lista correctamente\n");
+							}
+						}
+						else
+						{
+							printf("Se cancelo correctamente la reinicializacion\n");
+						}
+					}
+					else
+					{
+						printf("Primero debe cargar la lista para poder reiniciarla\n");
+					}
+					break;
+
+				case 4:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						ll_crearSubLista(listaEmpleados);
+					}
+					else
+					{
+						printf("Primero debe dar de alta al menos un empleado o cargar la lista\n");
+					}
+					break;
+
+				case 5:
+
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_remplazarUnEmpleado(listaEmpleados);
+					}
+					else
+					{
+						printf("Primero debe dar de alta al menos un empleado o cargar la lista\n");
+					}
+
+					break;
+
+				case 6:
+					if(controller_addEmployee(listaEmpleados))
+					{
+						dioAlMenosUnAlta=1;
+						altasNoGuardadas++;
+					}
+					break;
+
+				case 7:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_editEmployee(listaEmpleados);
+
+					}
+					else
+					{
+						printf("No hay empleados para modificar\n");
+					}
+					break;
+
+				case 8:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_removeEmployee(listaEmpleados);
+					}
+					else
+					{
+						printf("No hay empleados para dar de baja\n");
+					}
+					break;
+
+				case 9:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_ListEmployee(listaEmpleados);
+					}
+					else
+					{
+						printf("No hay empleados para listar\n");
+					}
+					break;
+
+				case 10:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						controller_sortEmployee(listaEmpleados);
+
+					}
+					else
+					{
+						printf("No hay empleados para ordenar\n");
+					}
+					break;
+
+				case 11:
+					if(dioAlMenosUnAlta || flagLoad)
+					{
+						if(controller_altaEmpleadoEligiendoLugar(listaEmpleados))
+						{
+							dioAlMenosUnAlta=1;
+							altasNoGuardadas++;
+						}
+					}
+					else
+					{
+						printf("Primero debe dar de alta al menos un empleado o cargar la lista\n");
+					}
+					break;
+
+				case 12:
+					if(dioAlMenosUnAlta==0 && !flagLoad)
+					{
+						printf("No se puede guardar la lista sin antes cargarla o dar de alta al menos un empleado\n");
+					}
+					else if(flagLoad && altasNoGuardadas>0)
+					{
+						utn_getCaracter(&confirmaGuardarTxt, "Usted modifico la lista, esta seguro que desea guardarla? Si guarda se sobreescribiran todos los datos (s/n): ", "Error\n", 'a', 'z', 2);
+						if(confirmaGuardarTxt=='s')
+						{
+							controller_saveAsText("data.csv", listaEmpleados);
+							guardoLista++;
+
+							altasNoGuardadas=0;
+						}
+						else
+						{
+							printf("Se cancelo guardar la lista\n");
+						}
+					}
+					else if (!flagLoad && dioAlMenosUnAlta)
+					{
+						printf("AVISO, no cargo la lista, todo lo que haya en ella se sobreescribiran por los %d empleados nuevos que cargo\n", altasNoGuardadas);
+						validarCaracter(&confirmaGuardarTxt, "Esta seguro que desea guardar?  (s/n): ", "Respuesta invalida. 's' para confirmar guardar. 'n' para cancelar: ", 's', 'n');
+						if(confirmaGuardarTxt=='s')
+						{
+							controller_saveAsText("data.csv", listaEmpleados);
+							guardoLista++;
+
+							altasNoGuardadas=0;
+						}
+						else
+						{
+							printf("Se cancelo guardar la lista\n");
+						}
+					}
+					else
+					{
+						printf("No hay nada que guardar, en la lista estan los mismos datos que antes\n");
+					}
+
+					break;
+
+				case 13:
+
+					if(altasNoGuardadas>0 && flagLoad)
+					{
+						printf("AVISO: dio de alta a %d nuevos empleados y no los guardo, ", altasNoGuardadas);
+						validarCaracter(&salir, "Esta seguro que desea salir? s/n?: ", "Respuesta invalida. 's' para salir. 'n' para cancelar la salida: ", 's', 'n');
+						if(salir=='s')
+						{
+							ll_deleteLinkedList(listaEmpleados);
+							printf("Salida exitosa\n");
+						}
+					}
+					else
+					{
+						validarCaracter(&salir, "Esta seguro que desea salir? s/n?: ", "Respuesta invalida. 's' para salir. 'n' para cancelar la salida: ", 's', 'n');
+						ll_deleteLinkedList(listaEmpleados);
+						printf("Salida exitosa\n");
+					}
+					break;
+
+				default:
+				printf("Opcion invalida!\n");
+					break;
+			}
+
+		}while(salir=='n');
+
+	    return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
