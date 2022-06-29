@@ -305,3 +305,54 @@ int utn_getStringAlfaNumerico(char cadena[], int longitud, char mensaje [], char
 
 }
 
+int utn_getStringFloat(char cadena[], int longitud, char mensaje [], char mensajeError[], int reintentos)
+{
+    int retorno;
+    char buffer[longitud];
+    retorno=-1;
+
+    if(cadena != NULL && longitud>0 && mensaje != NULL && mensajeError != NULL && reintentos>=0)
+    {
+        do
+        {
+            printf("%s", mensaje);
+            if(myGets(buffer, longitud)==0 && esFlotante(buffer)==1)
+            {
+                strncpy(cadena,buffer,longitud);
+                retorno =0;
+                break;
+            }
+            reintentos--;
+            printf("%s", mensajeError);
+        }while(reintentos>=0);
+
+    }
+    return retorno;
+}
+
+int utn_getStringInt(char cadena[], int longitud, char mensaje [], char mensajeError[], int reintentos)
+{
+    int retorno;
+    char buffer[longitud];
+    retorno=-1;
+
+    if(cadena != NULL && longitud>0 && mensaje != NULL && mensajeError != NULL && reintentos>=0)
+    {
+        do
+        {
+            printf("%s", mensaje);
+            if(myGets(buffer, longitud)==0 && esNumerica(buffer)==1)
+            {
+                strncpy(cadena,buffer,longitud);
+                retorno =0;
+                break;
+            }
+            reintentos--;
+            printf("%s", mensajeError);
+        }while(reintentos>=0);
+
+    }
+
+    return retorno;
+
+}

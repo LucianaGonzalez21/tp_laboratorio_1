@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "utn.h"
 #include "menus.h"
+#include "controller.h"
 
 
 /** \brief Carga los datos de los pasajeros desde el archivo data.csv (modo texto).
@@ -38,19 +39,30 @@ int controller_loadFromText(char* path , LinkedList* pArrayListPassenger)
  */
 int controller_loadFromBinary(char* path , LinkedList* pArrayListPassenger)
 {
-	int retorno=-1;
+	int todoOk=0;
 
 	if(pArrayListPassenger!=NULL && path!=NULL)
 	{
 		FILE* pFile = fopen(path, "rb");
 		if(pFile!=NULL)
 		{
-			parser_PassengerFromBinary(pFile , pArrayListPassenger);
-			retorno=1;
+			if(parser_PassengerFromBinary(pFile , pArrayListPassenger))
+			{
+				todoOk=1;
+				printf("parser ok\n");
+			}
+			else
+			{
+				printf("fallo parser\n");
+			}
+		}
+		else
+		{
+			printf("archivo igual a null\n");
 		}
 	}
 
-	return retorno;
+	return todoOk;
 
 }
 
@@ -64,27 +76,38 @@ int controller_loadFromBinary(char* path , LinkedList* pArrayListPassenger)
 int controller_ListPassenger(LinkedList* pArrayListPassenger)
 {
 	int todoOk=0;
+	int tam;
+	Passenger* pPasajero = NULL;
 
 	if(pArrayListPassenger!=NULL)
 	{
 		todoOk=1;
-		int lenList = ll_len(pArrayListPassenger);
+		tam = ll_len(pArrayListPassenger);
 
-		printf("  Id           Nombre             Apellido            Precio         Codigo de vuelo      Tipo de pasajero         Estado de vuelo\n"
-				"--------------------------------------------------------------------------------------------------------------------------\n");
-
-
-		for (int i=0; i < lenList; ++i)
+		if(tam>0)
 		{
-			Passenger* pPassenger = ll_get(pArrayListPassenger, i);
-			printPassenger(pPassenger);
+			printf("  Id           Nombre             Apellido            Precio         Codigo de vuelo      Tipo de pasajero         Estado de vuelo\n"
+					"--------------------------------------------------------------------------------------------------------------------------\n");
+
+
+			for (int i=0; i < tam; ++i)
+			{
+				pPasajero = ll_get(pArrayListPassenger, i);
+				printPassenger(pPasajero);
+			}
+
+			printf("----------------------------------------------------------------------------------------------------------------------------\n\n");
 		}
-
-		printf("----------------------------------------------------------------------------------------------------------------------------\n\n");
+		else
+		{
+			printf("No hay empleados para mostrar.\n");
+			todoOk=-1;
+		}
 	}
-
 	return todoOk;
 }
+
+
 
 /** \brief Alta de pasajero
  *
@@ -95,27 +118,77 @@ int controller_ListPassenger(LinkedList* pArrayListPassenger)
  */
 int controller_addPassenger(LinkedList* pArrayListPassenger)
 {
-    int todoOk=0;
-    Passenger* pasajero;
+	int todoOk=-1;
+	int idPassengerActual;
+	char confirmacion;
+	Passenger* pasajeroNuevoAlta=NULL;
 
-    if(pArrayListPassenger!=NULL)
-    {
-    	todoOk=1;
-		pasajero = crear_Pasajero();
 
-		if(pasajero!=NULL)
+	if(pArrayListPassenger!=NULL && ll_isEmpty(pArrayListPassenger)>=0)
+	{
+
+		pasajeroNuevoAlta=Passenger_altaPasajero();
+
+		idPassengerActual=controller_getUltimoId();
+
+		Passenger_setId(pasajeroNuevoAlta, idPassengerActual);
+
+		if(pasajeroNuevoAlta!=NULL)
 		{
-			ll_add(pArrayListPassenger, pasajero);
-			printf("Pasajero agregado con exito.\n");
 
-			printf("  Id           Nombre             Apellido            Precio         Codigo de vuelo      Tipo de pasajero         Estado de vuelo\n"
-					"--------------------------------------------------------------------------------------------------------------------------\n");
-			printPassenger(pasajero);
-			printf("----------------------------------------------------------------------------------------------------------------------------\n\n");
+			printPassenger(pasajeroNuevoAlta);
+
+			utn_getCaracter(&confirmacion, "\n confirma el alta del pasajero? s/n : ", "Error\n", 'a', 'z', 2);
+
+			if(confirmacion=='s')
+			{
+
+				ll_add(pArrayListPassenger, pasajeroNuevoAlta);
+				Passenger_actualizarUltimoId(idPassengerActual);
+				printf("Pasajero dado de alta con exito\n");
+				todoOk=1;
+			}
+			else
+			{
+				Passenger_delete(pasajeroNuevoAlta);
+				printf("Alta cancelada\n");
+			}
 		}
-    }
+
+	}
+
 
     return todoOk;
+}
+
+int controller_buscarIdPasajero(LinkedList* pArrayListPassenger, int idPasajero)
+{
+	int indiceEncontrado=-1;
+	int idEncontrado;
+	int tam;
+	Passenger* pasajero;
+
+	if(pArrayListPassenger!=NULL && idPasajero>=0)
+	{
+		tam=ll_len(pArrayListPassenger);
+
+		for(int i=0;i<tam;i++)
+		{
+			pasajero=ll_get(pArrayListPassenger, i);
+
+			if(pasajero!=NULL)
+			{
+				Passenger_getId(pasajero, &idEncontrado);
+
+				if(idEncontrado==idPasajero)
+				{
+					indiceEncontrado=i;
+				}
+			}
+		}
+	}
+
+	return indiceEncontrado;
 }
 
 /** \brief Modificar datos de pasajero
@@ -127,93 +200,121 @@ int controller_addPassenger(LinkedList* pArrayListPassenger)
  */
 int controller_editPassenger(LinkedList* pArrayListPassenger)
 {
-    int todoOk=0;
-    Passenger* pasajero;
-    int opcion;
-    int idIngresado;
-    char nombre[50];
-    char apellido[50];
-    float precio;
-    char codigo[20];
-    int tipo;
-    int estado;
+	int todoOK=-1;
+	int idIngresado;
+	int indiceEncontradoModificar;
+	char afirmacion;
+	int opcion;
+	char nombre[50];
+	char apellido[50];
+	float auxPrecio;
+	char precio[100];
+	char auxCodigoVuelo[10];
+	int auxTipoPasajero;
+	char tipoPasajero[100];
+	int auxEstadoVuelo;
+	char estadoVuelo[100];
+	Passenger* empleadoModificar=NULL;
 
-    if(pArrayListPassenger!=NULL)
-    {
-    	printf("***Modificacion de pasajeros***\n");
 
-    	if(controller_ListPassenger(pArrayListPassenger) &&
-    	!utn_getNumero(&idIngresado, "Ingrese el Id del pasajero a modificar: ", "Error, no valido.\n", 1, 10000,3))
-    	{
-			pasajero = (Passenger*)ll_get(pArrayListPassenger, idIngresado);
+	if(pArrayListPassenger!=NULL && ll_isEmpty(pArrayListPassenger)>=0)
+	{
 
-			if(pasajero==NULL)
+		controller_ListPassenger(pArrayListPassenger);
+
+		if(utn_getNumero(&idIngresado, "Ingrese el id que desea modificar: ", "Error\n", 1, 10000,3)==-1)
+		{
+			printf("error\n");
+			return -1;
+		}
+
+		indiceEncontradoModificar=controller_buscarIdPasajero( pArrayListPassenger, idIngresado);
+
+		empleadoModificar=ll_get(pArrayListPassenger, indiceEncontradoModificar);
+
+		if(empleadoModificar!=NULL && indiceEncontradoModificar>=0 && indiceEncontradoModificar<ll_len(pArrayListPassenger))
+		{
+
+			printPassenger(empleadoModificar);
+
+			utn_getCaracter(&afirmacion, "\n confirma modificacion? s/n: ", "error\n", 'a', 'z', 2);
+
+			if(afirmacion=='s')
 			{
-				printf("No se pudo encontrar el Id %d en la base de datos del sistema\n\n", idIngresado);
-				return 0;
-			}
-			else
-			{
-					if(!menuModificarPasajero(&opcion))
+
+					opcion=menuModificaciones();
+
+					switch(opcion)
 					{
-						switch(opcion){
 						case 1:
-							if(!utn_getString(nombre, 50, "Ingrese el nuevo nombre: ", "Error, nombre no valido.\n",3))
+							if(!utn_getString(nombre, 50,"Ingrese el nombre del pasajero: ","Error\n", 3))
 							{
-								Passenger_setNombre(pasajero, nombre);
-								printf("Nombre modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setNombre(empleadoModificar, nombre);
 							}
 							break;
 						case 2:
-							if(!utn_getString(apellido, 50, "Ingrese el nuevo apellido: ", "Error, apellido no valido.\n",3))
+							if(!utn_getString(apellido, 50,"Ingrese el apellido del pasajero: ","Error\n", 3))
 							{
-								Passenger_setApellido(pasajero, apellido);
-								printf("Apellido modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setApellido(empleadoModificar, apellido);
 							}
 							break;
 						case 3:
-							if(!utn_getFloat(&precio,"Ingrese el nuevo precio: ", "Error, precio no valido.\n", 1, 10000, 3))
+							if(!utn_getFloat(&auxPrecio, "Ingrese el precio del vuelo (10000-50000): ", "Error\n", 10000, 50000, 3))
 							{
-								Passenger_setPrecio(pasajero, precio);
-								printf("Precio modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setPrecio(empleadoModificar, auxPrecio);
+								itoa(auxPrecio, precio, 10);
 							}
 							break;
 						case 4:
-							if(!utn_getString(codigo, 20, "Ingrese el nuevo codigo: ", "Error, codigo no valido.\n",3))
+							if(!utn_getStringAlfaNumerico(auxCodigoVuelo,10, "Ingrese el codigo del vuelo (max 10 caracteres): ", "Error\n", 3))
 							{
-								Passenger_setCodigoVuelo(pasajero, codigo);
-								printf("Codigo modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setCodigoVuelo(empleadoModificar, auxCodigoVuelo);
 							}
 							break;
 						case 5:
-							if(!utn_getNumero(&tipo, "Ingrese el nuevo tipo de pasajero: ", "Error, tipo no valido.\n", 1, 3, 3))
+							printf("1.Primera clase\n");
+							printf("2.Clase ejecutiva\n");
+							printf("3.Clase economica\n");
+							if(!utn_getNumero(&auxTipoPasajero, "Ingrese el tipo de pasajero: ", "Error\n", 1, 3, 3))
 							{
-								Passenger_setTipoPasajero(pasajero, tipo);
-								printf("Tipo de pasajero modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setTipoPasajero(empleadoModificar, auxTipoPasajero);
+								itoa(auxTipoPasajero, tipoPasajero, 10);
 							}
 							break;
 						case 6:
-							if(!utn_getNumero(&estado, "Ingrese el nuevo estado de vuelo: ", "Error, estado de vuelo no valido.\n", 1, 4, 3))
+							printf("1 - Aterrizado\n");
+							printf("2 - En Horario\n");
+							printf("3 - En Vuelo\n");
+							printf("4 - Demorado\n");
+							if(!utn_getNumero(&auxEstadoVuelo, "Ingrese el estado de vuelo: ", "Error\n", 1, 4, 3))
 							{
-								Passenger_setStatus(pasajero, estado);
-								printf("Estado de vuelo modificado con exito!!!\n\n");
-								printPassenger(pasajero);
+								Passenger_setStatus(empleadoModificar, auxEstadoVuelo);
+								itoa(auxEstadoVuelo, estadoVuelo, 10);
 							}
 							break;
 						case 7:
 							break;
-						}
+						default:
+							printf("Error\n");
+							break;
 					}
-			}
-    	}
+					printPassenger(empleadoModificar);
 
-    }
-    return todoOk;
+					printf("\nEl Id del pasejero %d fue modificado...\n\n", idIngresado);
+				todoOK=1;
+			}
+			else
+			{
+				printf("\nModificacion cancelada");
+			}
+		}
+		else
+		{
+			printf("\nNo se encontro el id ingresado\n");
+		}
+
+	}
+	return todoOK;
 }
 
 /** \brief Baja de pasajero
@@ -225,45 +326,50 @@ int controller_editPassenger(LinkedList* pArrayListPassenger)
  */
 int controller_removePassenger(LinkedList* pArrayListPassenger)
 {
-	int todoOk=0;
-	Passenger* pasajero;
+	int todoOK=-1;
 	int idIngresado;
-	char letra;
+	int indiceEncontradoEliminar;
+	char afirmacion;
+	Passenger* empleadoEliminar=NULL;
 
-	if(pArrayListPassenger!=NULL)
+	if(pArrayListPassenger!=NULL && ll_isEmpty(pArrayListPassenger)>=0)
 	{
-		todoOk=1;
-		printf("***Eliminacion de pasajeros***\n");
 
-		if(controller_ListPassenger(pArrayListPassenger) &&
-		!utn_getNumero(&idIngresado, "Ingrese el Id del pasajero a eliminar: ", "Error, no valido.\n", 1, 10000,3))
+		controller_ListPassenger(pArrayListPassenger);
+
+		utn_getNumero(&idIngresado, "Ingrese el id que desea modificar: ", "Error\n ", 1, 1000,3);
+
+		indiceEncontradoEliminar=controller_buscarIdPasajero( pArrayListPassenger, idIngresado);
+
+		empleadoEliminar=ll_get(pArrayListPassenger, indiceEncontradoEliminar);
+
+		if(empleadoEliminar!=NULL && indiceEncontradoEliminar>=0 && indiceEncontradoEliminar<ll_len(pArrayListPassenger))
 		{
-			pasajero = (Passenger*)ll_get(pArrayListPassenger, idIngresado);
 
-			if(pasajero==NULL)
+			printPassenger(empleadoEliminar);
+
+			utn_getCaracter(&afirmacion, "\nconfirma eliminacion? s/n: ","error\n", 'a', 'z', 2);
+			fflush(stdin);
+
+			if(afirmacion=='s')
 			{
-				printf("Id %d no encontrado\n\n", idIngresado);
-				return 0;
+				ll_remove(pArrayListPassenger, indiceEncontradoEliminar);
+				Passenger_delete(empleadoEliminar);
+				printf("\nel pasajero fue eliminado con exito\n\n");
 			}
 			else
 			{
-				if(printPassenger(pasajero) &&
-				!utn_getCaracter(&letra, "Confirma que desea eliminar al pasajero? s/n", "Error.\n", 'a', 'z', 1))
-				{
-					if(letra == 's')
-					{
-						ll_remove(pArrayListPassenger, idIngresado);
-						printf("Pasajero eliminado correctamente.\n\n");
-					}
-					else
-					{
-						return 0;
-					}
-				}
+				printf("Eliminacion cancelada\n");
 			}
+			todoOK=1;
 		}
+		else
+		{
+			printf("\nNo se el id ingresado\n");
+		}
+
 	}
-	return todoOk;
+	return todoOK;
 }
 
 /** \brief Ordenar pasajeros
@@ -275,7 +381,138 @@ int controller_removePassenger(LinkedList* pArrayListPassenger)
  */
 int controller_sortPassenger(LinkedList* pArrayListPassenger)
 {
-    return 1;
+	int todoOk=-1;
+	int opcion;
+	int tipo;
+    LinkedList* listaAuxliar;
+
+	if(pArrayListPassenger!=NULL)
+	{
+	    int(*pFuncionOrdenar)(void*,void*);
+	    listaAuxliar=ll_clone(pArrayListPassenger);
+
+        if(ll_isEmpty(listaAuxliar)>=0 && ll_containsAll(pArrayListPassenger, listaAuxliar))
+        {
+                opcion=menuPrincipalOrdenamiento();
+
+                switch(opcion)
+                {
+                    case 1:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorId;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorId;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 2:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorNombre;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorNombre;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 3:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorApellido;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorApellido;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 4:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorPrecio;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorPrecio;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 5:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorCodigoDeVuelo;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorCodigoDeVuelo;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 6:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorTipoPasajero;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorTipoPasajero;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 7:
+                        menuCriterioOrdenamiento(&tipo);
+                        switch(tipo)
+                        {
+                            case 1:
+                                pFuncionOrdenar=Passenger_ordenarPorEstadoVuelo;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 1);
+                                break;
+                            case 2:
+                                pFuncionOrdenar=Passenger_ordenarPorEstadoVuelo;
+                                ll_sort(listaAuxliar, pFuncionOrdenar, 0);
+                                break;
+                        }
+                        break;
+                    case 8:
+                        break;
+                    default:
+                        printf("Error\n");
+                        break;
+                }
+
+            controller_ListPassenger(listaAuxliar);
+            ll_deleteLinkedList(listaAuxliar);
+            todoOk=0;
+        }
+		else
+        {
+           printf("\nNo se han ingresado ningun elemento a la lista pasajeros\n");
+		}
+	}
+
+    return todoOk;
 }
 
 /** \brief Guarda los datos de los pasajeros en el archivo data.csv (modo texto).
@@ -325,6 +562,7 @@ int controller_saveAsText(char* path , LinkedList* pArrayListPassenger)
 				Passenger_getStatus(pasajero, &estado))
 				{
 					fprintf(pFile, "%d,%s,%s,%f,%s,%d,%d\n", id, nombre, apellido, precio, codigo, tipo, estado);
+					//falta validar el retonro de fprintf
 				}
 				else
 				{
@@ -358,7 +596,7 @@ int controller_saveAsBinary(char* path , LinkedList* pArrayListPassenger)
     if(path!=NULL && pArrayListPassenger!=NULL)
     {
     	todoOk=1;
-    	pFile = fopen("path", "wb");
+    	pFile = fopen(path, "wb");
 
     	if(pFile!=NULL)
     	{
@@ -375,3 +613,25 @@ int controller_saveAsBinary(char* path , LinkedList* pArrayListPassenger)
     return todoOk;
 }
 
+int controller_getUltimoId()
+{
+	int ultimoId=1;
+	char ultimoIdStr[100];
+
+	FILE* pFile = fopen("ultimoId.txt", "r");
+
+	if(pFile != NULL)
+	{
+		fscanf(pFile, "%[^\n]", ultimoIdStr);
+
+		ultimoId=atoi(ultimoIdStr);
+	}
+	else
+	{
+	    pFile=fopen("ultimoId.txt", "w");
+	    fprintf(pFile, "%d\n", ultimoId);
+	}
+	fclose(pFile);
+
+	return ultimoId;
+}

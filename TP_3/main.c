@@ -4,6 +4,7 @@
 #include "Controller.h"
 #include "Passenger.h"
 #include "menus.h"
+//#include "parser.h"
 
 /****************************************************
     Menu:
@@ -26,6 +27,8 @@ int main()
 	setbuf(stdout, NULL);
 
     int opcion;
+    int flag=0;
+    int flagSave = 0;
 
     LinkedList* listaPasajeros = ll_newLinkedList();
 
@@ -35,42 +38,157 @@ int main()
 
     			switch (opcion) {
     			case 1:
-    				printf("opcion 1\n");
-    				controller_loadFromText("data.csv" ,listaPasajeros);
+    				if(!flagSave)
+    				{
+						if(controller_loadFromText("data2.csv" ,listaPasajeros))
+						{
+							printf("Datos cargados correctamente.\n\n");
+							flagSave=1;
+						}
+						else
+						{
+							printf("Error al cargar datos desde archivo.\n\n");
+						}
+    				}
+    				else if(flagSave)
+    				{
+    					printf("El archivo ya fue cargado.\n\n");
+    				}
+    				else
+    				{
+    					printf("El archivo ya fue cargado en modo binario.\n\n");
+    				}
     				break;
     			case 2:
-    				controller_loadFromBinary("data.csv", listaPasajeros);
+    				if(!flagSave)
+    				{
+						if(controller_loadFromBinary("data2.csv", listaPasajeros))
+						{
+							printf("Datos cargados correctamente.\n\n");
+							flagSave = 2;
+						}
+						else
+						{
+							printf("Error al cargar datos desde el archivo.\n\n");
+						}
+    				}
+    				else if(flagSave)
+    				{
+    					printf("El archivo ya fue cargado en modo texto.\n\n");
+    				}
+    				else
+    				{
+    					printf("El archivo ya fue cargado.\n\n");
+    				}
     				break;
     			case 3:
-    				printf("alta pasajero\n");
-    				controller_addPassenger(listaPasajeros);
+    				if(!controller_addPassenger(listaPasajeros))
+    				{
+    					printf("Error al dar de alta.\n\n");
+    				}
+    				else
+    				{
+    					printf("Alta realizada con exito.\n\n");
+    					flag=1;
+    				}
     				break;
     			case 4:
-    				printf("modificar datos\n");
-    				//controller_editPassenger(listaPasajeros);
+    				if(flagSave || flagSave==2 || flag)
+    				{
+						if(!controller_editPassenger(listaPasajeros))
+						{
+							printf("Error al modificar datos.\n\n");
+						}
+						else
+						{
+							printf("Modificacion realizada con exito.\n\n");
+						}
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar pasajeros desde el archivo o dando de alta.\n\n");
+    				}
     				break;
     			case 5:
-    				printf("eliminar pasajero\n");
-    				//controller_removePassenger(listaPasajeros);
+    				if(flag || flagSave || flagSave==2)
+    				{
+						if(!controller_removePassenger(listaPasajeros))
+						{
+							printf("Error al eliminar pasajero.\n\n");
+						}
+						else
+						{
+							printf("Pasajero eliminado.\n\n");
+						}
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar pasajeros desde el archivo o dando de alta.\n\n");
+    				}
     				break;
     			case 6:
-    				//printf("listar\n");
-    				controller_ListPassenger(listaPasajeros);
+    				if(flag || flagSave || flagSave==2)
+    				{
+						if(!controller_ListPassenger(listaPasajeros))
+						{
+							printf("Error al listar pasajeros.\n\n");
+						}
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar pasajeros desde el archivo o dando de alta\n\n");
+    				}
     				break;
     			case 7:
-    				printf("ordenar\n");
-    				//controller_sortPassenger(listaPasajeros);
+    				if(flagSave || flagSave==2 || flag)
+    				{
+    					if(!controller_sortPassenger(listaPasajeros))
+    					{
+    						printf("Error al listar pasajeros.\n\n");
+    					}
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar pasajeros desde el archivo o dando de alta.\n\n");
+    				}
     				break;
     			case 8:
-    				printf("guardar como texto\n");
-    				//controller_saveAsText("data.txt", listaPasajeros);
+
+    				if(flagSave || flag)
+    				{
+						controller_saveAsText("data.txt", listaPasajeros);
+						flagSave=3;
+						printf("Archivo guardado en modo texto correctamente.\n");
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar los datos desde el archivo como texto.\n\n");
+    				}
     				break;
     			case 9:
-    				printf("guardar como binario\n");
-    				//controller_saveAsBinary("data.bin", listaPasajeros);
+
+    				if(flagSave == 2)
+    				{
+						controller_saveAsBinary("data.bin", listaPasajeros);
+						flagSave=3;
+						printf("Archivo guardado en modo binario correctamente.\n");
+    				}
+    				else
+    				{
+    					printf("Primero debe cargar los datos desde el archivo como binario.\n\n");
+    				}
     				break;
     			case 10:
-    				printf("Programa finalizado.\n\n");
+    				if(flagSave==3)
+    				{
+    					Passenger_deleteAll(listaPasajeros);
+    					ll_deleteLinkedList(listaPasajeros);
+						printf("Programa finalizado.\n\n");
+    				}
+    				else
+    				{
+    					printf("No puede salir sin antes guardar los cambios.\n\n");
+    				}
     				break;
     			}
     		}

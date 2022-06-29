@@ -12,7 +12,33 @@
 
 #endif /* MENUS_H_ */
 
-int menuEstadoVuelo(int *opcion);
-int menuTipoPasajero(int *opcion);
+
 int menuPrincipal(int *opcion);
-int menuModificarPasajero(int *opcion);
+
+/**
+ * @brief Muestra un menu y pide al usuario una opcion
+ *
+ * @return Retrona la opcion elegida por el usuario.
+ */
+int menuModificaciones();
+
+/**
+ * @brief Muestra un menu y pide al usuario una opcion
+ *
+ * @return Retrona la opcion elegida por el usuario.
+ */
+int menuPrincipalOrdenamiento();
+
+/**
+ * @brief Muestra un menu y pide al usuario una opcion
+ *
+ * @param tipo
+ * @return Retrona 1 si el parametro no es valido, 0 si es valido
+ */
+int menuCriterioOrdenamiento(int* tipo);
+
+/** \brief Muestra un menu y pide al usuario una opcion
+ *
+ * \return  Retrona la opcion elegida por el usuario.
+ */
+int menuInformes();

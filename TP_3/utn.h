@@ -63,4 +63,10 @@ int utn_getString(char cadena[], int longitud, char mensaje [], char mensajeErro
 /// @return Devuelve -1 si hay un error de parametros, 0 si OK
 int utn_getStringAlfaNumerico(char cadena[], int longitud, char mensaje [], char mensajeError[], int reintentos);
 
+
+int utn_getStringFloat(char cadena[], int longitud, char mensaje [], char mensajeError[], int reintentos);
+
+int utn_getStringInt(char cadena[], int longitud, char mensaje [], char mensajeError[], int reintentos);
+
+
 #endif /* UTN_H_ */

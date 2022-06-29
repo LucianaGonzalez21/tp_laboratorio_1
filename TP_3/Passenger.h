@@ -5,6 +5,8 @@
  *
  */
 
+#include "LinkedList.h"
+
 #ifndef PASSENGER_H_
 #define PASSENGER_H_
 
@@ -22,6 +24,7 @@ typedef struct
 Passenger* Passenger_new();
 Passenger* Passenger_newParametros(char* idStr,char* nombreStr, char* apellidoStr, char* precioStr, char* codigoVueloStr, char* tipoPasajeroStr, char* estadoVueloStr);
 void Passenger_delete(Passenger*);
+int Passenger_deleteAll(LinkedList* pArrayListPassenger);
 
 int Passenger_setId(Passenger* this,int id);
 int Passenger_getId(Passenger* this,int* id);
@@ -51,4 +54,29 @@ int printPassenger(Passenger* p);
 
 Passenger* crear_Pasajero();
 
+/*****ID****/
+int Passenger_actualizarUltimoId(int idAnterior);
+
+/*****SORT****/
+int sort_id(void* p1, void* p2);
+int sort_nombre(void* p1, void* p2);
+int sort_apellido(void* p1, void* p2);
+int sort_precio(void* p1, void* p2);
+int sort_codigoVuelo(void* p1, void* p2);
+int sort_tipoVuelo(void* p1, void* p2);
+int sort_estadoVuelo(void* p1, void* p2);
+
+
+int Passenger_ordenarPorId(void* a, void* b);
+int Passenger_ordenarPorNombre(void* a, void* b);
+int Passenger_ordenarPorApellido(void* a, void* b);
+int Passenger_ordenarPorPrecio(void* a, void* b);
+int Passenger_ordenarPorCodigoDeVuelo(void* a, void* b);
+int Passenger_ordenarPorTipoPasajero(void* a, void* b);
+int Passenger_ordenarPorEstadoVuelo(void* a, void* b);
+
+
+int Passenger_getdescripcionEstadoVuelo(int estadoVuelo , char* descripcionEstadoVuelo);
+int Passenger_getdescripcionTipoPasajero(int tipoPasajero , char* descripcionTipo);
+Passenger* Passenger_altaPasajero();
 #endif /* PASSENGER_H_ */
